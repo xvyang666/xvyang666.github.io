@@ -1,0 +1,48 @@
+name: 部署到 GitHub Pages
+
+on:
+  push:
+    branches:
+      - main  # 监听 main 分支的 push 事件
+
+# 设置 GitHub Actions 的权限, 允许它将编译后的文件写入到 GitHub Pages
+permissions:
+  contents: read
+  pages: write
+  id-token: write
+
+# 确保同时只有一个部署任务在运行
+concurrency:
+  group: 'pages'
+  cancel-in-progress: true
+
+jobs:
+  deploy:
+    environment:
+      name: github-pages
+      url: ${{ steps.deployment.outputs.page_url }}
+    runs-on: ubuntu-latest
+    steps:
+      - name: 拉代码切分支
+        uses: actions/checkout@v4
+
+      - name: 设置node环境
+        uses: actions/setup-node@v4
+        with:
+          node-version: '22.15'
+          cache: 'npm'
+
+      - name: 安装依赖
+        run: npm ci
+
+      - name: 构建
+        run: npm run build
+
+      - name: 上传
+        uses: actions/upload-pages-artifact@v3
+        with:
+          path: './dist'
+
+      - name: 部署到 GitHub Pages
+        id: deployment
+        uses: actions/deploy-pages@v4
